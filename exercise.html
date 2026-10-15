@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>運動記録 - 体重・カロリー管理アプリ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <!-- ヘッダー -->
+        <header class="app-header">
+            <h1>🏃 運動カロリー記録 ＋ AI</h1>
+            <p class="subtitle">運動を入力するとAIが消費カロリーを自動推算します</p>
+        </header>
+
+        <!-- 運動入力・表示カード -->
+        <main class="card">
+            <div class="form-group">
+                <label for="exerciseDate">記録する日付</label>
+                <input type="date" id="exerciseDate" onchange="onDateChanged()">
+            </div>
+
+            <!-- ★AI自動計算エリア -->
+            <div class="form-group" style="background: #f8f9fa; padding: 14px; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                <label for="aiInputText" style="color: #2563eb; font-size: 14px; margin-bottom: 8px; display: block;">🏃 運動内容を入力してAIでカロリー計算</label>
+                <input type="text" id="aiInputText" placeholder="例: 30分ジョギング、腕立て伏せ50回" style="margin-bottom: 10px; font-size: 14px; width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                <button type="button" class="btn-primary" onclick="analyzeExerciseWithAI()" style="background-color: #10b981;">✨ 運動内容をAIに分析してもらう</button>
+                <p id="aiStatus" style="font-size: 12px; color: #64748b; margin-top: 8px; margin-bottom: 0;"></p>
+            </div>
+
+            <div class="form-group">
+                <label for="burnedCal">消費カロリー (kcal)</label>
+                <input type="number" id="burnedCal" placeholder="例: 250">
+            </div>
+
+            <div class="form-group">
+                <label for="exerciseMemo">運動のメモ（種目など）</label>
+                <input type="text" id="exerciseMemo" placeholder="例: 30分ジョギング">
+            </div>
+
+            <button class="btn-primary" onclick="saveExerciseRecord()">この日の記録を保存する</button>
+        </main>
+
+        <!-- 選択した日の状態を表示するエリア -->
+        <section class="card" style="margin-top: 20px;">
+            <h2>📋 <span id="selectedDateTitle">今日</span> の運動記録</h2>
+            <div id="dayRecordList">この日の記録はまだありません。</div>
+        </section>
+
+        <!-- ページ移動ナビゲーション -->
+        <!-- 画面下部固定のナビゲーションバー -->
+    <nav class="bottom-nav">
+        <a href="index.html">📊 ダッシュボード</a>
+        <a href="food.html">🍚 食事記録</a>
+        <a href="exercise.html" class="active">🏃 運動記録</a>
+    </nav>
+    </div>
+
+    <script src="exercise.js"></script>
+</body>
+</html>

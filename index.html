@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>集計ダッシュボード - 体重・カロリー管理アプリ</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- グラフ描画用ライブラリ (Chart.js) の読み込み -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- ヘッダー -->
+        <header class="app-header">
+            <h1>📊 総合ダッシュボード</h1>
+            <p class="subtitle">毎日の体重とカロリー収支の集計</p>
+        </header>
+
+        <!-- ① プロフィール設定（折りたたみ） -->
+        <div class="profile-card">
+            <div class="profile-header" onclick="toggleProfileAccordion()">
+                <h3>⚙️ プロフィール・APIキー設定</h3>
+                <span id="accordionIcon" class="accordion-icon">▼ 開く</span>
+            </div>
+
+            <div id="profileBody" class="profile-body">
+                <!-- 身長・年齢・性別などの入力フォーム -->
+                <div class="form-group">
+                    <label for="profileHeight">身長 (cm)</label>
+                    <input type="number" id="profileHeight" placeholder="例: 170" oninput="calculateFitnessStats()">
+                </div>
+
+                <div class="form-group">
+                    <label for="profileAge">年齢</label>
+                    <input type="number" id="profileAge" placeholder="例: 30" oninput="calculateFitnessStats()">
+                </div>
+
+                <div class="form-group">
+                    <label for="profileGender">性別</label>
+                    <select id="profileGender" onchange="calculateFitnessStats()">
+                        <option value="male">男性</option>
+                        <option value="female">女性</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="profileActivity">日常の活動量</label>
+                    <select id="profileActivity" onchange="calculateFitnessStats()">
+                        <option value="1.2">1. ほとんど運動しない（デスクワーク中心）</option>
+                        <option value="1.375">2. 軽い運動（週1〜2回の運動・通勤等）</option>
+                        <option value="1.55">3. 中程度の運動（週3〜5回の運動）</option>
+                        <option value="1.725">4. 激しい運動（週6〜7日のハードな運動）</option>
+                    </select>
+                </div>
+
+                <div class="calc-result-box">
+                    <p>📊 計算結果目安:</p>
+                    <p>・適正体重 (BMI 22): <span id="displayIdealWeight" class="highlight">--- kg</span></p>
+                    <p>・基礎代謝 (BMR): <span id="displayBMR" class="highlight">--- kcal</span></p>
+                    <p>・1日の総消費カロリー (TDEE): <span id="displayTDEE" class="highlight">--- kcal</span></p>
+                </div>
+
+                <div class="form-group">
+                    <label for="profileTargetWeight">🎯 ご自身の目標体重 (kg)</label>
+                    <input type="number" id="profileTargetWeight" placeholder="例: 55.0" oninput="updateWeightChart()">
+                </div>
+
+                <button type="button" class="btn-primary" onclick="saveProfileData()"
+                    style="margin-top: 10px;">プロフィールを保存する</button>
+
+                <!-- 🔑 Gemini APIキー設定エリア -->
+                <div style="margin-top: 15px; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
+                    <div class="form-group">
+                        <label for="apiKeyInput" style="color: #2563eb;">🔑 Gemini APIキー（安全保管）</label>
+                        <p style="font-size: 11px; color: #64748b; margin-top: 2px; margin-bottom: 6px;">
+                            ※設定したキーはブラウザ（localStorage）にのみ保存されます</p>
+
+                        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+                            <input type="password" id="apiKeyInput" placeholder="APIキーを入力"
+                                style="font-size: 13px; flex: 1;">
+                            <button type="button" onclick="saveApiKey()"
+                                style="padding: 8px 12px; background: #10b981; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; white-space: nowrap;">保存</button>
+                        </div>
+
+                        <!-- ★追加：APIキー削除ボタン -->
+                        <button type="button" onclick="deleteApiKey()"
+                            style="width: 100%; padding: 6px; background: #f1f5f9; color: #ef4444; border: 1px solid #fca5a5; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">🗑️
+                            保存されているAPIキーのみ削除する</button>
+
+                        <p id="apiKeyStatus" style="font-size: 11px; color: #166534; margin: 6px 0 0 0;"></p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
+                    <button type="button" class="btn-primary" onclick="resetAppData()"
+                        style="background-color: #ef4444;">⚠️ アプリのデータをすべて初期化する</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ② 体重の推移グラフ ＆ 毎日の入力フォームをまとめたセクション -->
+        <section class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h2 style="margin: 0; font-size: 18px;">📈 体重の記録と推移</h2>
+                <!-- 期間切り替えボタン -->
+                <div style="display: flex; gap: 4px;">
+                    <button type="button" id="btnWeek" onclick="changeChartPeriod('week')"
+                        style="padding: 4px 8px; font-size: 11px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; cursor: pointer;">1週間</button>
+                    <button type="button" id="btnMonth" onclick="changeChartPeriod('month')"
+                        style="padding: 4px 8px; font-size: 11px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; cursor: pointer;">1か月</button>
+                    <button type="button" id="btnAll" onclick="changeChartPeriod('all')"
+                        style="padding: 4px 8px; font-size: 11px; border: 1px solid #cbd5e1; background: #2563eb; color: #fff; border-radius: 4px; cursor: pointer;">全期間</button>
+                </div>
+            </div>
+
+            <!-- 上部：グラフ表示エリア -->
+            <div style="position: relative; height: 220px; width: 100%; margin-bottom: 20px;">
+                <canvas id="weightChart"></canvas>
+            </div>
+
+            <!-- 下部：入力フォームエリア -->
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                <div style="display: flex; gap: 10px; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label for="weightDate"
+                            style="font-size: 12px; color: #475569; display: block; margin-bottom: 4px;">日付</label>
+                        <input type="date" id="weightDate" onchange="onWeightDateChanged()"
+                            style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 14px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="currentWeightInput"
+                            style="font-size: 12px; color: #475569; display: block; margin-bottom: 4px;">体重 (kg)</label>
+                        <input type="number" step="0.1" id="currentWeightInput" placeholder="例: 60.5"
+                            style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 14px;">
+                    </div>
+                    <div>
+                        <button class="btn-primary" onclick="saveWeightRecord()"
+                            style="padding: 9px 16px; white-space: nowrap;">保存</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ③ 本日のカロリー収支サマリーセクション -->
+        <section class="card">
+            <h2 style="font-size: 16px;">🔥 本日のカロリー収支</h2>
+
+            <div
+                style="display: flex; justify-content: space-around; text-align: center; margin: 15px 0; padding: 12px 8px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                <div style="flex: 1; min-width: 0;">
+                    <span style="font-size: 11px; color: #64748b; display: block; white-space: nowrap;">摂取カロリー</span>
+                    <span id="summaryIntake"
+                        style="font-size: 16px; font-weight: bold; color: #2563eb; display: block; margin-top: 4px;">0
+                        kcal</span>
+                </div>
+                <div style="font-size: 14px; color: #cbd5e1; padding: 0 4px; flex-shrink: 0;">vs</div>
+                <div style="flex: 1.2; min-width: 0; position: relative;">
+                    <span style="font-size: 11px; color: #64748b; display: block; white-space: nowrap;">総消費カロリー <span
+                            style="font-size: 9px; color: #3b82f6; cursor: pointer;"
+                            onclick="toggleBurnDetail()"></span></span>
+                    <!-- 数字をタップすると計算式を表示・切り替え -->
+                    <span id="summaryBurn" onclick="toggleBurnDetail()"
+                        style="font-size: 16px; font-weight: bold; color: #ef4444; display: block; margin-top: 4px; cursor: pointer;"
+                        title="タップして計算式を表示">2000 kcal</span>
+
+                    <!-- タップ時に表示される計算式ポップアップ（初期は非表示） -->
+                    <div id="burnDetailPopup"
+                        style="display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 11px; white-space: nowrap; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 4px;">
+                        基準: <span id="popupTdee">2000</span> + 運動: <span id="popupExercise">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; padding: 10px; border-radius: 6px; background: #eff6ff;"
+                id="summaryBalanceBox">
+                <p id="summaryBalanceText" style="margin: 0; font-size: 13px; font-weight: bold; color: #1e293b;">
+                    収支計算中...</p>
+            </div>
+        </section>
+
+        <!-- ④ カロリー収支カレンダーセクション（コンパクト版） -->
+        <section class="card">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 4px;">
+                <h2 style="margin: 0; font-size: 14px; white-space: nowrap;">📅 カロリー収支カレンダー</h2>
+                <!-- 月の切り替えボタン -->
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <button type="button" onclick="changeCalendarMonth(-1)"
+                        style="padding: 2px 6px; font-size: 12px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; cursor: pointer;">◀</button>
+                    <span id="calendarMonthTitle" style="font-size: 13px; font-weight: bold;">2026年10月</span>
+                    <button type="button" onclick="changeCalendarMonth(1)"
+                        style="padding: 2px 6px; font-size: 12px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; cursor: pointer;">▶</button>
+                </div>
+            </div>
+
+            <!-- カレンダー本体のグリッド -->
+            <div id="calorieCalendar"
+                style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; margin-bottom: 10px;">
+                <!-- JavaScriptでここにカレンダーの日付を動的に生成します -->
+            </div>
+
+            <!-- タップした日の詳細表示エリア -->
+            <div id="calendarDetailBox"
+                style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; font-size: 12px; color: #334155;">
+                <p style="margin: 0; font-weight: bold; color: #64748b;">💡 日付をタップすると詳細が表示されます</p>
+            </div>
+        </section>
+
+        <!-- 他のページへのナビゲーション -->
+        <!-- 画面下部固定のナビゲーションバー -->
+        <nav class="bottom-nav">
+            <a href="index.html" class="active">📊 ダッシュボード</a>
+            <a href="food.html">🍚 食事記録</a>
+            <a href="exercise.html">🏃 運動記録</a>
+        </nav>
+    </div>
+
+    <!-- 外部スクリプトの読み込み -->
+    <script src="script.js"></script>
+
+</body>
+
+</html>

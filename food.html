@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食事記録 - 体重・カロリー管理アプリ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <!-- ヘッダー -->
+        <header class="app-header">
+            <h1>🍚 食事カロリー記録 ＋ AI</h1>
+            <p class="subtitle">写真を撮るか選ぶだけでAIがカロリーを自動推算します</p>
+        </header>
+
+        <!-- 食事入力・表示カード -->
+        <main class="card">
+            <div class="form-group">
+                <label for="foodDate">記録する日付</label>
+                <input type="date" id="foodDate" onchange="onDateChanged()">
+            </div>
+
+            <!-- ★カメラ撮影＆ファイル選択に対応したエリア -->
+            <div class="form-group" style="background: #f8f9fa; padding: 14px; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                <label for="foodPhoto" style="color: #2563eb; font-size: 14px; margin-bottom: 8px; display: block;">📸 料理の写真を撮影・選択</label>
+                
+                <!-- capture="environment" を追加することで、スマホでタップした時に直接外カメラが起動しやすくなります -->
+                <input type="file" id="foodPhoto" accept="image/*" capture="environment" style="margin-bottom: 10px; font-size: 14px; width: 100%;">
+                
+                <button type="button" class="btn-primary" onclick="analyzePhotoWithAI()" style="background-color: #10b981; margin-top: 4px;">✨ 写真をAIに分析してもらう</button>
+                <p id="aiStatus" style="font-size: 12px; color: #64748b; margin-top: 8px; margin-bottom: 0;"></p>
+            </div>
+
+            <div class="form-group">
+                <label for="foodIntake">摂取カロリー (kcal)</label>
+                <input type="number" id="foodIntake" placeholder="例: 650">
+            </div>
+
+            <div class="form-group">
+                <label for="foodMemo">食事のメモ（品名など）</label>
+                <input type="text" id="foodMemo" placeholder="例: 昼食：パスタとサラダ">
+            </div>
+
+            <button class="btn-primary" onclick="saveFoodRecord()">この日の記録を保存する</button>
+        </main>
+
+        <!-- 選択した日の状態を表示するエリア -->
+        <section class="card" style="margin-top: 20px;">
+            <h2>📋 <span id="selectedDateTitle">今日</span> の記録</h2>
+            <div id="dayRecordList">この日の記録はまだありません。</div>
+        </section>
+
+        <!-- ページ移動ナビゲーション -->
+        <!-- 画面下部固定のナビゲーションバー -->
+    <nav class="bottom-nav">
+        <a href="index.html">📊 ダッシュボード</a>
+        <a href="food.html" class="active">🍚 食事記録</a>
+        <a href="exercise.html">🏃 運動記録</a>
+    </nav>
+    </div>
+
+    <script src="food.js"></script>
+</body>
+</html>
