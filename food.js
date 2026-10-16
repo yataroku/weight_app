@@ -1,21 +1,6 @@
 // ==========================================
-// ★ご自身のAPIキーをここに貼り付けてください
+// 1. ページ読み込み時の初期処理
 // ==========================================
-async function analyzePhotoWithAI() {
-    // 毎回ブラウザの保存領域からキーを取得する
-    const GEMINI_API_KEY = localStorage.getItem('my_gemini_api_key');
-    
-    if (!GEMINI_API_KEY) {
-        alert("APIキーが設定されていません。ダッシュボード画面からAPIキーを設定してください。");
-        return;
-    }
-    
-    // （以降のAI分析処理が続きます... urlに ${GEMINI_API_KEY} を組み込む）
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`;
-    // ...
-}
-
-// ページを開いた時の初期処理
 window.onload = function() {
     const today = getTodayFormatted();
     document.getElementById('foodDate').value = today;
@@ -68,11 +53,13 @@ function loadDataForDate(dateStr) {
 }
 
 // ==========================================
-// ★写真をAIに送ってカロリーを自動計算させる関数（最新モデル gemini-3.8-flash 対応）
+// 2. 写真を圧縮してAIに送り、カロリーを自動計算させるメイン関数
 // ==========================================
 async function analyzePhotoWithAI() {
-    if (GEMINI_API_KEY === "YOUR_API_KEY_HERE") {
-        alert("APIキーが設定されていません。script.jsの「YOUR_API_KEY_HERE」をご自身のAPIキーに書き換えてください。");
+    const GEMINI_API_KEY = localStorage.getItem('my_gemini_api_key');
+    
+    if (!GEMINI_API_KEY) {
+        alert("APIキーが設定されていません。ダッシュボード画面からAPIキーを設定してください。");
         return;
     }
 
@@ -85,13 +72,15 @@ async function analyzePhotoWithAI() {
     }
 
     const file = fileInput.files[0];
-    statusText.innerText = "🤖 AIが写真を分析中...（数秒かかります）";
+    statusText.innerText = "🤖 画像を圧縮し、AIが分析中...（数秒かかります）";
 
     try {
-        const base64Data = await convertFileToBase64(file);
+        // ★ここで画像を自動圧縮（長辺800px、画質70%）して高速化！
+        const compressedBase64 = await compressImage(file, 800, 800, 0.7);
+        const base64Data = compressedBase64.split(',')[1];
 
-        // ★修正点：指示された最新のモデル名に変更
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // ★高速な gemini-1.5-flash モデルを指定
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
         const promptText = 'この料理の写真を見て、以下のJSONフォーマットのみで正確に答えてください。他の余計な文字やMarkdownの記号（```jsonなど）は一切含めないでください。{"name": "料理名（例: 豚骨ラーメン）", "calories": 推定カロリーの数値のみ}';
 
@@ -101,7 +90,7 @@ async function analyzePhotoWithAI() {
                     { text: promptText },
                     {
                         inline_data: {
-                            mime_type: file.type,
+                            mime_type: "image/jpeg",
                             data: base64Data
                         }
                     }
@@ -138,20 +127,9 @@ async function analyzePhotoWithAI() {
     }
 }
 
-// ファイルをBase64に変換するヘルパー関数
-function convertFileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => {
-            const base64String = reader.result.split(',')[1];
-            resolve(base64String);
-        };
-        reader.onerror = error => reject(error);
-    });
-}
-
-// 食事データの保存
+// ==========================================
+// 3. 食事データの保存・削除
+// ==========================================
 function saveFoodRecord() {
     const date = document.getElementById('foodDate').value;
     const intake = parseFloat(document.getElementById('foodIntake').value);
@@ -168,11 +146,8 @@ function saveFoodRecord() {
 
     localStorage.setItem('my_food_history', JSON.stringify(foodHistory));
     loadDataForDate(date);
-    
-    // ★ alert('食事を記録しました！'); を削除
 }
 
-// 記録の削除
 function deleteFoodRecord(id) {
     if (!confirm('この記録を削除しますか？')) return;
 
@@ -181,4 +156,45 @@ function deleteFoodRecord(id) {
     
     localStorage.setItem('my_food_history', JSON.stringify(foodHistory));
     loadDataForDate(document.getElementById('foodDate').value);
+}
+
+// ==========================================
+// 4. 画像圧縮用のヘルパー関数（ファイルの一番下に追加）
+// ==========================================
+function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((height * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedDataUrl);
+      };
+      img.onerror = (error) => reject(error);
+    };
+    reader.onerror = (error) => reject(error);
+  });
 }
