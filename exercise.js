@@ -1,20 +1,3 @@
-// ==========================================
-// ★ご自身のAPIキーをここに貼り付けてください
-// ==========================================
-async function analyzeExerciseWithAI() {
-    // 毎回ブラウザの保存領域からキーを取得する
-    const GEMINI_API_KEY = localStorage.getItem('my_gemini_api_key');
-
-    if (!GEMINI_API_KEY) {
-        alert("APIキーが設定されていません。ダッシュボード画面からAPIキーを設定してください。");
-        return;
-    }
-
-    // （以降のAI分析処理が続きます... urlに ${GEMINI_API_KEY} を組み込む）
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`;
-    // ...
-}
-
 // ページを開いた時の初期処理
 window.onload = function () {
     const today = getTodayFormatted();
@@ -93,7 +76,6 @@ async function analyzeExerciseWithAI() {
     try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-        // ユーザーのプロフィール情報（体重など）があれば精度が上がるため取得（なければ標準60kg想定）
         const profile = JSON.parse(localStorage.getItem('my_fitness_profile')) || { weight: 60 };
         const userWeight = profile.weight || 60;
 
@@ -105,13 +87,23 @@ async function analyzeExerciseWithAI() {
             }]
         };
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-        });
+        // 混雑時に自動で最大3回まで再試行する処理
+        let response;
+        let data;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+            data = await response.json();
 
-        const data = await response.json();
+            if (!data.error || !data.error.message.includes('high demand')) {
+                break;
+            }
+            statusText.innerText = `🤖 サーバー混雑中のため再試行中... (${attempt}/3)`;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
 
         if (data.error) {
             throw new Error(data.error.message);
@@ -121,17 +113,20 @@ async function analyzeExerciseWithAI() {
         const cleanJsonText = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
         const result = JSON.parse(cleanJsonText);
 
-        // 入力欄に自動セット
         document.getElementById('exerciseMemo').value = result.name;
         document.getElementById('burnedCal').value = result.calories;
 
         statusText.innerText = `✨ 計算完了！「${result.name}」約 ${result.calories} kcal 消費！`;
 
     } catch (error) {
-        console.error(error);
-        statusText.innerText = "❌ エラーが発生しました。時間を置いてもう一度お試しください。";
-        alert("AIの計算に失敗しました: " + error.message);
-    }
+      console.error(error);
+      statusText.innerText = "❌ エラーが発生しました。";
+      if (error.message.includes('quota') || error.message.includes('rate-limit') || error.message.includes('high demand')) {
+          alert("AIの利用制限または混雑に達しました。しばらく時間をおいてから再度お試しください。");
+      } else {
+          alert("AIの計算に失敗しました: " + error.message);
+      }
+  }
 }
 
 // 運動データの保存
