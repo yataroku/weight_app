@@ -72,14 +72,14 @@ async function analyzePhotoWithAI() {
     }
 
     const file = fileInput.files[0];
-    statusText.innerText = "🤖 画像を圧縮し、AIが分析中...（数秒かかります）";
+    statusText.innerText = "🤖 画像を圧縮し、AIが分析中...";
 
     try {
-        // ★ここで画像を自動圧縮（長辺800px、画質70%）して高速化！
+        // 画像を自動圧縮（長辺800px、画質70%）
         const compressedBase64 = await compressImage(file, 800, 800, 0.7);
         const base64Data = compressedBase64.split(',')[1];
 
-        // ★高速な gemini-2.0-flash モデルを指定
+        // gemini-3.8-flash モデルを指定
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`;
 
         const promptText = 'この料理の写真を見て、以下のJSONフォーマットのみで正確に答えてください。他の余計な文字やMarkdownの記号（```jsonなど）は一切含めないでください。{"name": "料理名（例: 豚骨ラーメン）", "calories": 推定カロリーの数値のみ}';
@@ -98,31 +98,50 @@ async function analyzePhotoWithAI() {
             }]
         };
 
-        // 混雑時に自動で最大3回まで再試行する処理
-      let response;
-      let data;
-      for (let attempt = 1; attempt <= 3; attempt++) {
-          response = await fetch(url, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(requestBody)
-          });
-          data = await response.json();
+        // ★ご要望通り、最大3回までの再試行（リトライ）処理を保持！
+        let response;
+        let data;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+            data = await response.json();
 
-          if (!data.error || !data.error.message.includes('high demand')) {
-              break;
-          }
-          statusText.innerText = `🤖 サーバー混雑中のため再試行中... (${attempt}/3)`;
-          await new Promise(resolve => setTimeout(resolve, 2000));
-      }
+            // 成功したか、または「混雑(high demand)や429エラー以外」であればループを抜ける
+            if (!data.error || (!data.error.message.includes('high demand') && !data.error.message.includes('429'))) {
+                break;
+            }
+            if (attempt === 3) {
+                throw new Error(data.error.message);
+            }
+            statusText.innerText = `🤖 サーバー混雑中のため再試行中... (${attempt}/3)`;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
 
-      if (data.error) {
-          throw new Error(data.error.message);
-      }
+        if (data.error) {
+            throw new Error(data.error.message);
+        }
 
         const aiResponseText = data.candidates[0].content.parts[0].text.trim();
-        const cleanJsonText = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const result = JSON.parse(cleanJsonText);
+        console.log("AI生出力:", aiResponseText);
+
+        // ★万が一JSONの形式が少し崩れても止まらない安全な抽出処理
+        let result;
+        try {
+            const cleanJsonText = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            result = JSON.parse(cleanJsonText);
+        } catch (parseError) {
+            console.warn("JSONパース失敗、テキストから抽出し直します", parseError);
+            const nameMatch = aiResponseText.match(/"name"\s*:\s*"([^"]+)"/);
+            const calMatch = aiResponseText.match(/"calories"\s*:\s*([0-9]+)/);
+            
+            result = {
+                name: nameMatch ? nameMatch[1] : "食事記録",
+                calories: calMatch ? parseInt(calMatch[1], 10) : 500
+            };
+        }
 
         // 入力欄に自動セット
         document.getElementById('foodMemo').value = result.name;
@@ -133,8 +152,8 @@ async function analyzePhotoWithAI() {
     } catch (error) {
       console.error(error);
       statusText.innerText = "❌ エラーが発生しました。";
-      if (error.message.includes('quota') || error.message.includes('rate-limit') || error.message.includes('high demand')) {
-          alert("AIの利用制限または混雑に達しました。しばらく時間をおいてから再度お試しください。");
+      if (error.message.includes('quota') || error.message.includes('rate-limit') || error.message.includes('high demand') || error.message.includes('429')) {
+          alert("AIの利用制限（429エラー）または混雑に達しました。しばらく時間をおいてから再度お試しください。");
       } else {
           alert("AIの分析に失敗しました: " + error.message);
       }

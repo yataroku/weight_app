@@ -109,9 +109,24 @@ async function analyzeExerciseWithAI() {
             throw new Error(data.error.message);
         }
 
-        const aiResponseText = data.candidates[0].content.parts[0].text.trim();
-        const cleanJsonText = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const result = JSON.parse(cleanJsonText);
+       const aiResponseText = data.candidates[0].content.parts[0].text.trim();
+        console.log("AI生出力:", aiResponseText);
+
+        // ★ ここから安全にJSONを取り出す処理に変更
+        let result;
+        try {
+            const cleanJsonText = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            result = JSON.parse(cleanJsonText);
+        } catch (parseError) {
+            console.warn("JSONパース失敗、テキストから抽出し直します", parseError);
+            const nameMatch = aiResponseText.match(/"name"\s*:\s*"([^"]+)"/);
+            const calMatch = aiResponseText.match(/"calories"\s*:\s*([0-9]+)/);
+            
+            result = {
+                name: nameMatch ? nameMatch[1] : exerciseText,
+                calories: calMatch ? parseInt(calMatch[1], 10) : 150
+            };
+        }
 
         document.getElementById('exerciseMemo').value = result.name;
         document.getElementById('burnedCal').value = result.calories;
@@ -126,7 +141,7 @@ async function analyzeExerciseWithAI() {
       } else {
           alert("AIの計算に失敗しました: " + error.message);
       }
-  }
+    }
 }
 
 // 運動データの保存
