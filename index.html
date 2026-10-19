@@ -103,16 +103,19 @@
 
         <!-- ② 体重の推移グラフ ＆ 毎日の入力フォームをまとめたセクション -->
         <section class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h2 style="margin: 0; font-size: 18px;">📈 体重の記録と推移</h2>
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
+                <!-- タイトルが縮まないようにしつつ、文字サイズを15〜16pxに調整 -->
+                <h2 style="margin: 0; font-size: 15px; font-weight: bold; white-space: nowrap;">📈 体重の記録と推移</h2>
+
                 <!-- 期間切り替えボタン -->
-                <div style="display: flex; gap: 4px;">
+                <div style="display: flex; gap: 3px; flex-shrink: 0;">
                     <button type="button" id="btnWeek" onclick="changeChartPeriod('week')"
-                        style="padding: 4px 8px; font-size: 11px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; cursor: pointer;">1週間</button>
+                        style="padding: 4px 6px; font-size: 10px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; cursor: pointer; white-space: nowrap;">1週間</button>
                     <button type="button" id="btnMonth" onclick="changeChartPeriod('month')"
-                        style="padding: 4px 8px; font-size: 11px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; cursor: pointer;">1か月</button>
+                        style="padding: 4px 6px; font-size: 10px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; cursor: pointer; white-space: nowrap;">1か月</button>
                     <button type="button" id="btnAll" onclick="changeChartPeriod('all')"
-                        style="padding: 4px 8px; font-size: 11px; border: 1px solid #cbd5e1; background: #2563eb; color: #fff; border-radius: 4px; cursor: pointer;">全期間</button>
+                        style="padding: 4px 6px; font-size: 10px; border: 1px solid #cbd5e1; background: #2563eb; color: #fff; border-radius: 4px; cursor: pointer; white-space: nowrap;">全期間</button>
                 </div>
             </div>
 
@@ -146,7 +149,7 @@
 
         <!-- ③ 本日のカロリー収支サマリーセクション -->
         <section class="card">
-            <h2 style="font-size: 16px;">🔥 本日のカロリー収支</h2>
+            <h2 style="font-size: 15px;">🔥 本日のカロリー収支</h2>
 
             <div
                 style="display: flex; justify-content: space-around; text-align: center; margin: 15px 0; padding: 12px 8px; background: #f8fafc; border-radius: 8px; align-items: center;">
@@ -183,18 +186,40 @@
 
         <!-- ④ カロリー収支カレンダーセクション（コンパクト版） -->
         <section class="card">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 4px;">
-                <h2 style="margin: 0; font-size: 14px; white-space: nowrap;">📅 カロリー収支カレンダー</h2>
-                <!-- 月の切り替えボタン -->
-                <div style="display: flex; gap: 6px; align-items: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <!-- 左側：カレンダーのタイトル -->
+                <div style="font-size: 15px; font-weight: bold; white-space: nowrap;">
+                    📅 カロリー収支カレンダー
+                </div>
+
+                <!-- 右側：月切り替えボタンと「上：年、下：月」の表示 -->
+                <div style="display: flex; gap: 4px; align-items: center;">
                     <button type="button" onclick="changeCalendarMonth(-1)"
-                        style="padding: 2px 6px; font-size: 12px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; cursor: pointer;">◀</button>
-                    <span id="calendarMonthTitle" style="font-size: 13px; font-weight: bold;">2026年10月</span>
+                        style="padding: 4px 8px; font-size: 12px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; cursor: pointer; white-space: nowrap;">◀</button>
+
+                    <!-- 上に年、下に月を配置するエリア（絶対に3列にならないようインラインフレックスで固定） -->
+                    <div style="display: inline-flex; flex-direction: column; align-items: center; line-height: 1.1; vertical-align: middle;">
+                        <span id="calendarYearTitle" style="font-size: 10px; font-weight: bold; color: #64748b; white-space: nowrap;">2026年</span>
+                        <span id="calendarMonthTitle" style="font-size: 13px; font-weight: bold; white-space: nowrap;">10月</span>
+                    </div>
+
                     <button type="button" onclick="changeCalendarMonth(1)"
-                        style="padding: 2px 6px; font-size: 12px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; cursor: pointer;">▶</button>
+                        style="padding: 4px 8px; font-size: 12px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; cursor: pointer; white-space: nowrap;">▶</button>
                 </div>
             </div>
+            <!-- カレンダー本体のグリッド -->
+            <div id="calorieCalendar"
+                style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; margin-bottom: 10px;">
+                <!-- JavaScriptでここにカレンダーの日付を動的に生成します -->
+            </div>
+
+            <!-- タップした日の詳細表示エリア -->
+            <div id="calendarDetailBox"
+                style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; font-size: 12px; color: #334155;">
+                <p style="margin: 0; font-weight: bold; color: #64748b;">💡 日付をタップすると詳細が表示されます</p>
+            </div>
+        </section>
+
 
             <!-- カレンダー本体のグリッド -->
             <div id="calorieCalendar"
