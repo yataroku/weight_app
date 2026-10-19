@@ -68,9 +68,9 @@ function saveProfileData() {
 
     const profile = { height, age, gender, activity, targetWeight };
     localStorage.setItem('my_fitness_profile', JSON.stringify(profile));
-    
+
     // ※アコーディオンは閉じず、アラート（保存しました通知）も出さないようにしています
-    
+
     updateWeightChart();
     updateCalorieSummary();
     if (typeof renderCalorieCalendar === 'function') renderCalorieCalendar();
@@ -96,7 +96,7 @@ function onWeightDateChanged() {
 function loadWeightForDate(dateStr) {
     let weightHistory = JSON.parse(localStorage.getItem('my_weight_history')) || [];
     const record = weightHistory.find(item => item.date === dateStr);
-    
+
     if (record) {
         document.getElementById('currentWeightInput').value = record.weight;
     } else {
@@ -114,7 +114,7 @@ function saveWeightRecord() {
     }
 
     let weightHistory = JSON.parse(localStorage.getItem('my_weight_history')) || [];
-    
+
     const existingIndex = weightHistory.findIndex(item => item.date === date);
     if (existingIndex >= 0) {
         weightHistory[existingIndex].weight = weight;
@@ -124,7 +124,7 @@ function saveWeightRecord() {
 
     weightHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
     localStorage.setItem('my_weight_history', JSON.stringify(weightHistory));
-    
+
     updateWeightChart();
     updateCalorieSummary();
     if (typeof renderCalorieCalendar === 'function') renderCalorieCalendar();
@@ -170,7 +170,7 @@ function updateWeightChart() {
     let filteredHistory = weightHistory;
     if (weightHistory.length > 0) {
         const latestDate = new Date(weightHistory[weightHistory.length - 1].date);
-        
+
         if (currentPeriod === 'week') {
             const cutoffDate = new Date(latestDate);
             cutoffDate.setDate(cutoffDate.getDate() - 7);
@@ -245,7 +245,7 @@ function updateCalorieSummary() {
 
     if (profile.height && profile.age && profile.activity) {
         let idealWeight = (profile.height / 100) * (profile.height / 100) * 22;
-        let bmr = (profile.gender === 'female') 
+        let bmr = (profile.gender === 'female')
             ? (9.247 * idealWeight + 3.098 * profile.height - 4.330 * profile.age + 447.593)
             : (13.397 * idealWeight + 4.799 * profile.height - 5.677 * profile.age + 88.362);
         tdee = Math.round(bmr * profile.activity);
@@ -314,7 +314,10 @@ function renderCalorieCalendar() {
     const year = currentCalendarDate.getFullYear();
     const month = currentCalendarDate.getMonth();
 
-    titleEl.innerText = `${year}年${month + 1}月`;
+    // ★「上：年、下：月」のそれぞれの要素に文字をセットする
+    const yearEl = document.getElementById('calendarYearTitle');
+    if (yearEl) yearEl.innerText = `${year}年`;
+    titleEl.innerText = `${month + 1}月`; // ← これだけでOK！
 
     const foodHistory = JSON.parse(localStorage.getItem('my_food_history')) || [];
     const exerciseHistory = JSON.parse(localStorage.getItem('my_exercise_history')) || [];
@@ -323,7 +326,7 @@ function renderCalorieCalendar() {
     let tdee = 2000;
     if (profile.height && profile.age && profile.activity) {
         let idealWeight = (profile.height / 100) * (profile.height / 100) * 22;
-        let bmr = (profile.gender === 'female') 
+        let bmr = (profile.gender === 'female')
             ? (9.247 * idealWeight + 3.098 * profile.height - 4.330 * profile.age + 447.593)
             : (13.397 * idealWeight + 4.799 * profile.height - 5.677 * profile.age + 88.362);
         tdee = Math.round(bmr * profile.activity);
@@ -383,7 +386,7 @@ function showDayDetail(dateStr) {
     let tdee = 2000;
     if (profile.height && profile.age && profile.activity) {
         let idealWeight = (profile.height / 100) * (profile.height / 100) * 22;
-        let bmr = (profile.gender === 'female') 
+        let bmr = (profile.gender === 'female')
             ? (9.247 * idealWeight + 3.098 * profile.height - 4.330 * profile.age + 447.593)
             : (13.397 * idealWeight + 4.799 * profile.height - 5.677 * profile.age + 88.362);
         tdee = Math.round(bmr * profile.activity);
@@ -498,12 +501,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // 2. プロフィールデータの読み込み
     const savedProfile = JSON.parse(localStorage.getItem('my_fitness_profile'));
     if (savedProfile) {
-        if(document.getElementById('profileHeight')) document.getElementById('profileHeight').value = savedProfile.height || '';
-        if(document.getElementById('profileAge')) document.getElementById('profileAge').value = savedProfile.age || '';
-        if(document.getElementById('profileGender')) document.getElementById('profileGender').value = savedProfile.gender || 'male';
-        if(document.getElementById('profileActivity')) document.getElementById('profileActivity').value = savedProfile.activity || '1.2';
-        if(document.getElementById('profileTargetWeight')) document.getElementById('profileTargetWeight').value = savedProfile.targetWeight || '';
-        
+        if (document.getElementById('profileHeight')) document.getElementById('profileHeight').value = savedProfile.height || '';
+        if (document.getElementById('profileAge')) document.getElementById('profileAge').value = savedProfile.age || '';
+        if (document.getElementById('profileGender')) document.getElementById('profileGender').value = savedProfile.gender || 'male';
+        if (document.getElementById('profileActivity')) document.getElementById('profileActivity').value = savedProfile.activity || '1.2';
+        if (document.getElementById('profileTargetWeight')) document.getElementById('profileTargetWeight').value = savedProfile.targetWeight || '';
+
         calculateFitnessStats();
     }
 
@@ -535,7 +538,7 @@ function toggleBurnDetail() {
 }
 
 // 画面のほかの場所をタップしたときにポップアップを閉じる機能
-document.addEventListener('click', function(event) {
+document.addEventListener('click', function (event) {
     const summaryBurn = document.getElementById('summaryBurn');
     const popup = document.getElementById('burnDetailPopup');
     if (popup && summaryBurn) {
