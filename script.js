@@ -279,19 +279,21 @@ function updateCalorieSummary() {
         if (totalIntake === 0 && totalExerciseBurn === 0) {
             balanceBox.style.background = '#f8fafc';
             balanceText.style.color = '#64748b';
-            balanceText.innerText = `📝 今日の食事や運動が記録されていません`;
+            balanceText.innerHTML = `📝 今日の食事や運動が記録されていません`;
         } else if (balance < 0) {
             balanceBox.style.background = '#f0fdf4';
             balanceText.style.color = '#166534';
-            balanceText.innerText = `🎉 アンダーカロリー達成！ (${Math.abs(balance)} kcal のマイナス収支)`;
+            // ★ カッコの前で改行するように修正
+            balanceText.innerHTML = `🎉 アンダーカロリー達成！<br>(${Math.abs(balance)} kcal のマイナス収支)`;
         } else if (balance > 0) {
             balanceBox.style.background = '#fef2f2';
             balanceText.style.color = '#991b1b';
-            balanceText.innerText = `⚠️ オーバーカロリー (+${balance} kcal 超過しています)`;
+            // ★ カッコの前で改行するように修正
+            balanceText.innerHTML = `⚠️ オーバーカロリー<br>(+${balance} kcal 超過しています)`;
         } else {
             balanceBox.style.background = '#f8fafc';
             balanceText.style.color = '#1e293b';
-            balanceText.innerText = `⚖️ 収支バランスゼロ (±0 kcal)`;
+            balanceText.innerHTML = `⚖️ 収支バランスゼロ<br>(±0 kcal)`;
         }
     }
 }
@@ -409,10 +411,12 @@ function showDayDetail(dateStr) {
     if (dayFoods.length === 0 && dayExercises.length === 0) {
         balanceText = 'この日の記録はありません';
     } else if (balance <= 0) {
-        balanceText = `🎉 アンダーカロリー (${Math.abs(balance)} kcal マイナス)`;
+        // ★ カッコの前で改行するように修正
+        balanceText = `🎉 アンダーカロリー<br>(${Math.abs(balance)} kcal マイナス)`;
         colorStyle = '#166534';
     } else {
-        balanceText = `⚠️ オーバーカロリー (+${balance} kcal 超過)`;
+        // ★ カッコの前で改行するように修正
+        balanceText = `⚠️ オーバーカロリー<br>(+${balance} kcal 超過)`;
         colorStyle = '#991b1b';
     }
 
