@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食事記録 - 体重・カロリー管理アプリ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <!-- ヘッダー -->
+        <header class="app-header">
+            <h1>🍚 食事カロリー記録</h1>
+            <p class="subtitle">メニューを選ぶか入力して一瞬でカロリーを記録します</p>
+        </header>
+
+        <!-- 食事入力・表示カード -->
+        <main class="card">
+            <div class="form-group">
+                <label for="foodDate">記録する日付</label>
+                <input type="date" id="foodDate" onchange="onDateChanged()">
+            </div>
+
+            <!-- ★データベース計算エリア（待ち時間ゼロ） -->
+            <div class="form-group db-calc-box">
+                <label class="db-calc-label">⚡ データベースから一瞬でセット（待ち時間ゼロ）</label>
+                
+                <div class="db-input-row">
+                    <select id="dbFoodSelect" class="db-select-field">
+                        <optgroup label="🍚 ごはん・主食">
+                            <option value="rice">ごはん（中盛り1杯 / 250kcal）</option>
+                            <option value="onigiri">おにぎり（1個 / 180kcal）</option>
+                            <option value="bread">食パン（6枚切り1枚 / 160kcal）</option>
+                        </optgroup>
+                        <optgroup label="🍜 麺類">
+                            <option value="ramen">ラーメン（1杯 / 650kcal）</option>
+                            <option value="udon">うどん・そば（1杯 / 400kcal）</option>
+                            <option value="pasta">パスタ（1皿 / 600kcal）</option>
+                        </optgroup>
+                        <optgroup label="🍖 主菜・おかず">
+                            <option value="karaage">鶏の唐揚げ（3〜4個 / 300kcal）</option>
+                            <option value="hamburg">ハンバーグ（1個 / 350kcal）</option>
+                            <option value="grilled_fish">焼き魚（1切れ / 200kcal）</option>
+                            <option value="curry">カレーライス（1皿 / 750kcal）</option>
+                        </optgroup>
+                        <optgroup label="🍳 卵料理・おつまみ">
+                            <option value="tamagoyaki">卵焼き（1人前 / 150kcal）</option>
+                        </optgroup>
+                        <optgroup label="🥗 汁物・副菜">
+                            <option value="salad">グリーンサラダ（1皿 / 80kcal）</option>
+                            <option value="miso_soup">みそ汁（1杯 / 50kcal）</option>
+                        </optgroup>
+                        <optgroup label="🍺 ドリンク・お酒・スイーツ">
+                            <option value="beer350">ビール 350ml（1缶 / 140kcal）</option>
+                            <option value="beer500">ビール 500ml（1缶 / 200kcal）</option>
+                            <option value="coffee_latte">カフェラテ（1杯 / 120kcal）</option>
+                            <option value="sweets">洋菓子・ケーキ（1個 / 350kcal）</option>
+                        </optgroup>
+                    </select>
+                    
+                    <!-- ★ 1から始まり、0.5刻みで増減するように設定 (min="1", step="0.5", value="1") -->
+                    <input type="number" id="dbFoodAmount" class="db-amount-field" placeholder="数量" value="1" min="1" step="0.5">
+                </div>
+                
+                <button type="button" class="btn-primary db-btn" onclick="calculateFoodFromDatabase()">⚡ 一瞬でカロリーをセットする</button>
+            </div>
+
+            <!-- ★写真AI分析エリア（おまけ） -->
+            <div class="form-group ai-calc-box">
+                <label for="foodPhoto" class="ai-calc-label">📸 料理の写真でAI分析（おまけ）</label>
+                <input type="file" id="foodPhoto" accept="image/*" capture="environment" class="ai-input-field">
+                <button type="button" class="btn-primary ai-btn" onclick="analyzePhotoWithAI()">✨ 写真をAIに分析してもらう（※混雑時遅延あり）</button>
+                <p id="aiStatus" class="ai-status-text"></p>
+            </div>
+
+            <div class="form-group">
+                <label for="foodIntake">摂取カロリー (kcal)</label>
+                <input type="number" id="foodIntake" placeholder="例: 650">
+            </div>
+
+            <div class="form-group">
+                <label for="foodMemo">食事のメモ（品名など）</label>
+                <input type="text" id="foodMemo" placeholder="例: 昼食：ラーメン">
+            </div>
+
+            <button class="btn-primary" onclick="saveFoodRecord()">この日の記録を保存する</button>
+        </main>
+
+        <!-- 選択した日の状態を表示するエリア -->
+        <section class="card" style="margin-top: 20px;">
+            <h2>📋 <span id="selectedDateTitle">今日</span> の記録</h2>
+            <div id="dayRecordList">この日の記録はまだありません。</div>
+        </section>
+
+        <!-- 画面下部固定のナビゲーションバー -->
+        <nav class="bottom-nav">
+            <a href="index.html">📊 ダッシュボード</a>
+            <a href="food.html" class="active">🍚 食事記録</a>
+            <a href="exercise.html">🏃 運動記録</a>
+        </nav>
+    </div>
+
+    <script src="food.js"></script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>集計ダッシュボード - 体重・カロリー管理アプリ</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- グラフ描画用ライブラリ (Chart.js) の読み込み -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- ヘッダー -->
+        <header class="app-header">
+            <h1>📊 総合ダッシュボード</h1>
+            <p class="subtitle">毎日の体重とカロリー収支の集計</p>
+        </header>
+
+        <!-- ① プロフィール設定（折りたたみ） -->
+        <div class="profile-card">
+            <div class="profile-header" onclick="toggleProfileAccordion()">
+                <h3>⚙️ プロフィール・APIキー設定</h3>
+                <span id="accordionIcon" class="accordion-icon">▼ 開く</span>
+            </div>
+
+            <div id="profileBody" class="profile-body">
+                <!-- 身長・年齢・性別などの入力フォーム -->
+                <div class="form-group">
+                    <label for="profileHeight">身長 (cm)</label>
+                    <input type="number" id="profileHeight" placeholder="例: 170" oninput="calculateFitnessStats()">
+                </div>
+
+                <div class="form-group">
+                    <label for="profileAge">年齢</label>
+                    <input type="number" id="profileAge" placeholder="例: 30" oninput="calculateFitnessStats()">
+                </div>
+
+                <div class="form-group">
+                    <label for="profileGender">性別</label>
+                    <select id="profileGender" onchange="calculateFitnessStats()">
+                        <option value="male">男性</option>
+                        <option value="female">女性</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="profileActivity">日常の活動量</label>
+                    <select id="profileActivity" onchange="calculateFitnessStats()">
+                        <option value="1.2">1. ほとんど運動しない（デスクワーク中心）</option>
+                        <option value="1.375">2. 軽い運動（週1〜2回の運動・通勤等）</option>
+                        <option value="1.55">3. 中程度の運動（週3〜5回の運動）</option>
+                        <option value="1.725">4. 激しい運動（週6〜7日のハードな運動）</option>
+                    </select>
+                </div>
+
+                <div class="calc-result-box">
+                    <p>📊 計算結果目安:</p>
+                    <p>・適正体重 (BMI 22): <span id="displayIdealWeight" class="highlight">--- kg</span></p>
+                    <p>・基礎代謝 (BMR): <span id="displayBMR" class="highlight">--- kcal</span></p>
+                    <p>・1日の総消費カロリー (TDEE): <span id="displayTDEE" class="highlight">--- kcal</span></p>
+                </div>
+
+                <div class="form-group">
+                    <label for="profileTargetWeight">🎯 ご自身の目標体重 (kg)</label>
+                    <input type="number" id="profileTargetWeight" placeholder="例: 55.0" oninput="updateWeightChart()">
+                </div>
+
+                <button type="button" class="btn-primary profile-save-btn" onclick="saveProfileData()">プロフィールを保存する</button>
+
+                <!-- 🔑 Gemini APIキー設定エリア -->
+                <div class="api-key-section">
+                    <div class="form-group">
+                        <label for="apiKeyInput" class="api-key-label">🔑 Gemini APIキー（安全保管）</label>
+                        <p class="api-key-note">※設定したキーはブラウザ（localStorage）にのみ保存されます</p>
+
+                        <div class="api-key-row">
+                            <input type="password" id="apiKeyInput" class="api-key-input" placeholder="APIキーを入力">
+                            <button type="button" class="api-key-save-btn" onclick="saveApiKey()">保存</button>
+                        </div>
+
+                        <!-- APIキー削除ボタン -->
+                        <button type="button" class="api-key-delete-btn" onclick="deleteApiKey()">🗑️ 保存されているAPIキーのみ削除する</button>
+
+                        <p id="apiKeyStatus" class="api-key-status"></p>
+                    </div>
+                </div>
+
+                <div class="reset-section">
+                    <button type="button" class="btn-primary reset-btn" onclick="resetAppData()">⚠️ アプリのデータをすべて初期化する</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ② 体重の推移グラフ ＆ 毎日の入力フォームをまとめたセクション -->
+        <section class="card">
+            <div class="chart-header-area">
+                <h2 class="chart-title">📈 体重の記録と推移</h2>
+
+                <!-- 期間切り替えボタン -->
+                <div class="period-btn-group">
+                    <button type="button" id="btnWeek" class="period-btn" onclick="changeChartPeriod('week')">1週間</button>
+                    <button type="button" id="btnMonth" class="period-btn" onclick="changeChartPeriod('month')">1か月</button>
+                    <button type="button" id="btnAll" class="period-btn active" onclick="changeChartPeriod('all')">全期間</button>
+                </div>
+            </div>
+
+            <!-- 上部：グラフ表示エリア -->
+            <div class="chart-container-box">
+                <canvas id="weightChart"></canvas>
+            </div>
+
+            <!-- 下部：入力フォームエリア -->
+            <div class="weight-form-area">
+                <div class="weight-input-row">
+                    <div class="weight-input-col">
+                        <label for="weightDate" class="weight-label">日付</label>
+                        <input type="date" id="weightDate" class="weight-date-field" onchange="onWeightDateChanged()">
+                    </div>
+                    <div class="weight-input-col">
+                        <label for="currentWeightInput" class="weight-label">体重 (kg)</label>
+                        <input type="number" step="0.1" id="currentWeightInput" class="weight-value-field" placeholder="例: 60.5">
+                    </div>
+                    <div>
+                        <button class="btn-primary weight-save-btn" onclick="saveWeightRecord()">保存</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ③ 本日のカロリー収支サマリーセクション -->
+        <section class="card">
+            <h2 class="summary-section-title">🔥 本日のカロリー収支</h2>
+
+            <div class="summary-box">
+                <div class="summary-item-col">
+                    <span class="summary-label">摂取カロリー</span>
+                    <span id="summaryIntake" class="summary-value-intake">0 kcal</span>
+                </div>
+                <div class="summary-vs">vs</div>
+                <div class="summary-item-col-wide">
+                    <span class="summary-label">総消費カロリー</span>
+                    <!-- 数字をタップすると計算式を表示・切り替え -->
+                    <span id="summaryBurn" class="summary-value-burn" onclick="toggleBurnDetail()" title="タップして計算式を表示">2000 kcal</span>
+
+                    <!-- タップ時に表示される計算式ポップアップ（初期は非表示） -->
+                    <div id="burnDetailPopup" class="burn-popup">
+                        基準: <span id="popupTdee">2000</span> + 運動: <span id="popupExercise">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="balance-display-box" id="summaryBalanceBox">
+                <p id="summaryBalanceText" class="balance-text">収支計算中...</p>
+            </div>
+        </section>
+
+        <!-- ④ カロリー収支カレンダーセクション（コンパクト版） -->
+        <section class="card">
+            <div class="calendar-header-area">
+                <!-- 左側：カレンダーのタイトル -->
+                <div class="calendar-title-text">
+                    📅 カロリー収支カレンダー
+                </div>
+
+                <!-- 右側：月切り替えボタンと「上：年、下：月」の表示 -->
+                <div class="calendar-nav-group">
+                    <button type="button" class="calendar-nav-btn" onclick="changeCalendarMonth(-1)">◀</button>
+
+                    <!-- 上に年、下に月を配置するエリア -->
+                    <div class="calendar-ym-display">
+                        <span id="calendarYearTitle" class="calendar-year-span">2026年</span>
+                        <span id="calendarMonthTitle" class="calendar-month-span">10月</span>
+                    </div>
+
+                    <button type="button" class="calendar-nav-btn" onclick="changeCalendarMonth(1)">▶</button>
+                </div>
+            </div>
+
+            <!-- カレンダー本体のグリッド -->
+            <div id="calorieCalendar" class="calendar-grid">
+                <!-- JavaScriptでここにカレンダーの日付を動的に生成します -->
+            </div>
+
+            <!-- タップした日の詳細表示エリア -->
+            <div id="calendarDetailBox" class="calendar-detail-box">
+                <p class="calendar-detail-placeholder">💡 日付をタップすると詳細が表示されます</p>
+            </div>
+        </section>
+
+        <!-- 他のページへのナビゲーション -->
+        <!-- 画面下部固定のナビゲーションバー -->
+        <nav class="bottom-nav">
+            <a href="index.html" class="active">📊 ダッシュボード</a>
+            <a href="food.html">🍚 食事記録</a>
+            <a href="exercise.html">🏃 運動記録</a>
+        </nav>
+    </div>
+
+    <!-- 外部スクリプトの読み込み -->
+    <script src="script.js"></script>
+
+</body>
+
+</html>

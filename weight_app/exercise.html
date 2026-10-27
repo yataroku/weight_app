@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>運動記録 - 体重・カロリー管理アプリ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <!-- ヘッダー -->
+        <header class="app-header">
+            <h1>🏃 運動カロリー記録</h1>
+            <p class="subtitle">運動メニューを選ぶと一瞬でカロリーを計算します</p>
+        </header>
+
+        <!-- 運動入力・表示カード -->
+        <main class="card">
+            <div class="form-group">
+                <label for="exerciseDate">記録する日付</label>
+                <input type="date" id="exerciseDate" onchange="onDateChanged()">
+            </div>
+
+            <!-- ★指定された9つの運動項目に対応したデータベース計算エリア -->
+            <div class="form-group db-calc-box">
+                <label class="db-calc-label">⚡ データベースから一瞬で計算（待ち時間ゼロ）</label>
+                
+                <div class="db-input-row">
+                    <select id="dbExerciseSelect" class="db-select-field">
+                        <option value="walking">ウォーキング（分単位）</option>
+                        <option value="running">ジョギング（分単位）</option>
+                        <option value="pushup">腕立て（回数単位）</option>
+                        <option value="situp">腹筋（回数単位）</option>
+                        <option value="backextension">背筋（回数単位）</option>
+                        <option value="squat">スクワット（回数単位）</option>
+                        <option value="cycling">サイクリング（分単位）</option>
+                        <option value="yoga">ヨガ・ストレッチ（分単位）</option>
+                        <option value="swimming">水泳（分単位）</option>
+                    </select>
+                    <input type="number" id="dbExerciseAmount" class="db-amount-field" placeholder="時間(分) or 回数" value="30">
+                </div>
+                
+                <button type="button" class="btn-primary db-btn" onclick="calculateFromDatabase()">⚡ 一瞬でカロリーを計算する</button>
+            </div>
+
+            <!-- 従来のAI自動計算エリア（おまけ） -->
+            <div class="form-group ai-calc-box">
+                <label for="aiInputText" class="ai-calc-label">🤖 AIでカロリー計算</label>
+                <input type="text" id="aiInputText" class="ai-input-field" placeholder="例: 30分ジョギング">
+                <button type="button" class="btn-primary ai-btn" onclick="analyzeExerciseWithAI()">✨ AIに分析してもらう（※時間がかかります）</button>
+                <p id="aiStatus" class="ai-status-text"></p>
+            </div>
+
+            <div class="form-group">
+                <label for="burnedCal">消費カロリー (kcal)</label>
+                <input type="number" id="burnedCal" placeholder="例: 250">
+            </div>
+
+            <div class="form-group">
+                <label for="exerciseMemo">運動のメモ（種目など）</label>
+                <input type="text" id="exerciseMemo" placeholder="例: 30分ウォーキング">
+            </div>
+
+            <button class="btn-primary" onclick="saveExerciseRecord()">この日の記録を保存する</button>
+        </main>
+
+        <!-- 選択した日の状態を表示するエリア -->
+        <section class="card" style="margin-top: 20px;">
+            <h2>📋 <span id="selectedDateTitle">今日</span> の運動記録</h2>
+            <div id="dayRecordList">この日の記録はまだありません。</div>
+        </section>
+
+        <!-- 画面下部固定のナビゲーションバー -->
+        <nav class="bottom-nav">
+            <a href="index.html">📊 ダッシュボード</a>
+            <a href="food.html">🍚 食事記録</a>
+            <a href="exercise.html" class="active">🏃 運動記録</a>
+        </nav>
+    </div>
+
+    <script src="exercise.js"></script>
+</body>
+</html>
